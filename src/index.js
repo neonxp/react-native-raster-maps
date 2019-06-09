@@ -1,7 +1,8 @@
 import React, { PureComponent } from 'react'
 import { Image, View, PixelRatio, PanResponder } from 'react-native'
 import Svg, { Polyline, Polygon } from 'react-native-svg'
-
+import * as FileSystem from 'expo-file-system';
+import Tile from './tile'
 import debounce from './debounce'
 
 const DEBOUNCE_DELAY = 60
@@ -86,10 +87,27 @@ export default class Map extends PureComponent {
       deltaY: 0,
       deltaScale: 0,
     }
+    FileSystem.makeDirectoryAsync(FileSystem.cacheDirectory + 'tiles').catch(NOOP)
   }
 
   componentDidMount() {
     this.syncToProps()
+    this.gc = setInterval(() => {
+      const time = +(new Date()) / 1000
+      FileSystem.readDirectoryAsync(FileSystem.cacheDirectory + 'tiles').then(list => {
+        list.map(item => {
+          FileSystem.getInfoAsync(FileSystem.cacheDirectory + 'tiles/' + item).then(finfo => {
+            if (time - finfo.modificationTime > 1000 * 60) {
+              FileSystem.deleteAsync(finfo.uri)
+            }
+          })
+        })
+      })
+    }, 1000)
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.gc)
   }
 
   componentWillMount() {
@@ -465,7 +483,7 @@ export default class Map extends PureComponent {
     }
 
     this.setState({
-      pixelDelta: null,
+      pixelDelta: [0, 0],
       zoomDelta: 0
     }, NOOP)
 
@@ -538,7 +556,6 @@ export default class Map extends PureComponent {
     const { oldTiles } = this.state
     const dprs = [1, PixelRatio.get()]
     const mapUrl = this.props.provider || providers['wikimedia']
-
     const {
       tileMinX,
       tileMaxX,
@@ -613,10 +630,10 @@ export default class Map extends PureComponent {
       }
     }
 
-    return tiles.map(tile => (<Image
+    return tiles.map(tile => (<Tile
       key={tile.key}
-      source={{ uri: tile.url, cache: 'force-cache' }}
-      resizeMethod={"scale"}
+      tileKey={tile.key}
+      source={tile.url}
       style={{
         height: tile.height,
         width: tile.width,
