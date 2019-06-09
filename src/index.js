@@ -80,7 +80,7 @@ export default class Map extends PureComponent {
       width: props.width || props.defaultWidth,
       height: props.height || props.defaultHeight,
       zoomDelta: 0,
-      pixelDelta: null,
+      pixelDelta: [0, 0],
       oldTiles: [],
       deltaX: 0,
       deltaY: 0,
@@ -317,7 +317,6 @@ export default class Map extends PureComponent {
 
     const tileX = this.lng2tile(latLng[1], zoom)
     const tileY = this.lat2tile(latLng[0], zoom)
-
     return [
       (tileX - tileCenterX) * 256.0 + width / 2 + (pixelDelta ? pixelDelta[0] : 0),
       (tileY - tileCenterY) * 256.0 + height / 2 + (pixelDelta ? pixelDelta[1] : 0)
@@ -479,6 +478,9 @@ export default class Map extends PureComponent {
   // Markers
 
   renderMarkers = () => {
+    if (!this.state.width || !this.state.height || !this.state.pixelDelta) {
+      return null
+    }
     const { center, zoom, pixelDelta, zoomDelta, width, height } = this.state
     const roundedZoom = Math.round(zoom + (zoomDelta || 0))
     const zoomDiff = zoom + (zoomDelta || 0) - roundedZoom
@@ -577,10 +579,10 @@ export default class Map extends PureComponent {
             key: `${x}-${y}-${old.roundedZoom}`,
             url: mapUrl(x, y, old.roundedZoom),
             srcSet: this.srcSet(dprs, mapUrl, x, y, old.roundedZoom),
-            left: xDiff + (x - old.tileMinX) * 256 * pow + left,
-            top: yDiff + (y - old.tileMinY) * 256 * pow + top,
-            width: 256 * pow,
-            height: 256 * pow,
+            left: (xDiff + (x - old.tileMinX) * 256 * pow + left) * scale,
+            top: (yDiff + (y - old.tileMinY) * 256 * pow + top) * scale,
+            width: 256 * pow * scale,
+            height: 256 * pow * scale,
             active: false,
             opacity: 1,
           })
@@ -601,10 +603,10 @@ export default class Map extends PureComponent {
           key,
           url: mapUrl(x, y, roundedZoom),
           srcSet: this.srcSet(dprs, mapUrl, x, y, roundedZoom),
-          left: (x - tileMinX) * 256 + left,
-          top: (y - tileMinY) * 256 + top,
-          width: 256,
-          height: 256,
+          left: ((x - tileMinX) * 256 + left) * scale,
+          top: ((y - tileMinY) * 256 + top) * scale,
+          width: 256 * scale,
+          height: 256 * scale,
           active: true,
           opacity: 1,
         })
@@ -616,10 +618,10 @@ export default class Map extends PureComponent {
       source={{ uri: tile.url, cache: 'force-cache' }}
       resizeMethod={"scale"}
       style={{
-        height: tile.height * scale,
-        width: tile.width * scale,
-        left: tile.left * scale,
-        top: tile.top * scale,
+        height: tile.height,
+        width: tile.width,
+        left: tile.left,
+        top: tile.top,
         position: 'absolute',
         opacity: tile.opacity
       }}
@@ -629,6 +631,7 @@ export default class Map extends PureComponent {
   }
 
   render() {
+
     return (<View
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
