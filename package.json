@@ -1,0 +1,21 @@
+{
+  "name": "react-native-raster-maps",
+  "version": "1.0.0",
+  "description": "Based on https://pigeon-maps.js.org/.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/neonxp/react-native-raster-maps"
+  },
+  "keywords": [
+    "react",
+    "react-native",
+    "maps",
+    "osm"
+  ],
+  "author": "Alexander NeonXP Kiryukhin",
+  "license": "MIT"
+}
