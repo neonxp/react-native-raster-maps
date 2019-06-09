@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react'
-import { Image, View, PixelRatio, PanResponder } from 'react-native'
+import { TouchableOpacity, View, PixelRatio, PanResponder } from 'react-native'
 import Svg, { Polyline, Polygon } from 'react-native-svg'
 import * as FileSystem from 'expo-file-system';
 import Tile from './tile'
@@ -262,7 +262,8 @@ export default class Map extends PureComponent {
     return dprs.map(dpr => url(x, y, z, dpr) + (dpr === 1 ? '' : ` ${dpr}x`)).join(', ')
   }
 
-  imageLoaded = (key) => {
+  imageLoaded = (x, y, z) => {
+    const key = `${x}-${y}-${z}`
     if (this._loadTracker && key in this._loadTracker) {
       this._loadTracker[key] = true
 
@@ -272,6 +273,7 @@ export default class Map extends PureComponent {
         this.setState({ oldTiles: [] }, NOOP)
       }
     }
+    this.props.onLoadTile && this.props.onLoadTile(x, y, z)
   }
 
   getBounds = (center = this.state.center, zoom = this.zoomPlusDelta()) => {
@@ -513,9 +515,14 @@ export default class Map extends PureComponent {
       }
       const xy = this.latLngToPixel(coords, center, zoom + zoomDelta)
 
-      return <View style={[{
-        left: xy[0] + dx - (child.props.width || 32) / 2, top: xy[1] + dy - (child.props.height || 32) / 2, position: 'absolute'
-      }, child.props.style]}>{React.cloneElement(child, {})}</View>
+      return <TouchableOpacity
+        onPress={child.props.onPress || NOOP}
+        style={[{
+          left: xy[0] + dx - (child.props.width || 32) / 2, top: xy[1] + dy - (child.props.height || 32) / 2, position: 'absolute'
+        }, child.props.style]}
+      >
+        {React.cloneElement(child, {})}
+      </TouchableOpacity>
     });
     return childrenWithProps
   }
@@ -626,6 +633,7 @@ export default class Map extends PureComponent {
           height: 256 * scale,
           active: true,
           opacity: 1,
+          x, y, z: roundedZoom,
         })
       }
     }
@@ -642,7 +650,7 @@ export default class Map extends PureComponent {
         position: 'absolute',
         opacity: tile.opacity
       }}
-      onLoad={() => this.imageLoaded(tile.key)}
+      onLoad={() => this.imageLoaded(tile.x, tile.y, tile.z)}
     />
     ))
   }
